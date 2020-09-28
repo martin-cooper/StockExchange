@@ -1,0 +1,102 @@
+//
+// Created by Martin Cooper on 8/21/20.
+//
+#include <iostream>
+#include "Limit.h"
+#include "Book.h"
+
+void Book::addOrder(Order *newOrder) {
+    orderIdMap[newOrder->idNumber] = newOrder;
+    auto midIndex {bookData.size() / 2};
+    int price = newOrder->limitPrice;
+    //check if first order in the book
+    if (bestPriceIndex == -1) {
+        bookData[midIndex].addOrder(newOrder);
+        bookData[midIndex].setPrice(price);
+        bestPriceIndex = midIndex;
+        bestPriceAmount = price;
+    } else {
+        //assuming reasonable order here, wont go out of bounds since we allocated a reasonable size
+        //TODO: error handling
+        int newIndex = price - bestPriceAmount + bestPriceIndex;
+        bookData[newIndex].setPrice(price);
+        bookData[newIndex].addOrder(newOrder);
+
+        if ((oType == OrderType::BUY && price > bestPriceAmount) || (oType == OrderType::SELL && price < bestPriceAmount)) {
+            bestPriceIndex = newIndex;
+            bestPriceAmount = price;
+        }
+    }
+}
+
+qty_t Book::fillSharesForOrder(oid_t orderId, qty_t quantity) {
+    auto limitLevel {findLimitLevel(orderId)};
+    auto order {orderIdMap[orderId]};
+    limitLevel.partialFillOrder(order, quantity);
+}
+
+qty_t Book::partialCancelOrder(oid_t orderId, qty_t quantity) {
+    auto limitLevel {findLimitLevel(orderId)};
+    auto order {orderIdMap[orderId]};
+    limitLevel.reduceOrderQty(order, quantity);
+}
+
+void Book::deleteOrder(oid_t orderId) {
+    auto limitLevel {findLimitLevel(orderId)};
+    auto order {orderIdMap[orderId]};
+    limitLevel.removeOrder(order);
+    orderIdMap.erase(orderId);
+    //removed the last order at a level
+    if (limitLevel.getVolume() == 0) {
+        //look for new best limit price
+        bool foundReplacement {false};
+        if (oType == OrderType::BUY) {
+            for (int i {bestPriceIndex}; i > 0; --i) {
+                if (bookData[i].getVolume() > 0) {
+                    bestPriceIndex = i;
+                    bestPriceAmount = bookData[i].getPrice();
+                    foundReplacement = true;
+                    break;
+                }
+            }
+
+        } else {
+            for (int i {bestPriceIndex}; i < bookData.size(); ++i) {
+                if (bookData[i].getVolume() > 0) {
+                    bestPriceIndex = i;
+                    bestPriceAmount = bookData[i].getPrice();
+                    foundReplacement = true;
+                    break;
+                }
+            }
+        }
+        if (!foundReplacement) {
+            bestPriceAmount = -1;
+            bestPriceIndex = -1;
+        }
+    }
+}
+
+Limit& Book::findLimitLevel(oid_t orderId) {
+    Order *order {orderIdMap[orderId]};
+    auto limitPrice {order->limitPrice};
+    Limit& limitLevel = bookData[bestPriceIndex + limitPrice - bestPriceAmount];
+    return limitLevel;
+}
+
+std::size_t Book::totalOrdersOutstanding() {
+    std::size_t total {0};
+    for (const Limit& level: bookData) {
+        total += level.getOrderQty();
+    }
+    return total;
+}
+
+std::ostream& operator<< (std::ostream &out, const Book &book) {
+    for (const Limit& level: book.bookData) {
+        if (level.getVolume() > 0) {
+            out << level << std::endl;
+        }
+    }
+    return out;
+}
