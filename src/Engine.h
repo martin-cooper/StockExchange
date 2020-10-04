@@ -6,6 +6,7 @@
 #define STOCKEXCHANGE_ENGINE_H
 
 #include <ctime>
+#include <memory>
 #include "Book.h"
 #include "types.h"
 
@@ -19,11 +20,12 @@ struct OrderEvent {
 
 
 class Engine {
-    using events_t = std::vector<OrderEvent>;
+    using events_t = std::unique_ptr<std::vector<OrderEvent>>;
 private:
     Book buyBook;
     Book sellBook;
     events_t handleBuy(oid_t orderId, int limitPrice, qty_t newOrderQuantity);
+    events_t handleSell(oid_t orderId, int limitPrice, qty_t newOrderQuantity);
 
 public:
     explicit Engine(std::size_t allocSize) :
@@ -33,7 +35,7 @@ public:
     events_t processIncomingOrder(oid_t orderId, int limitPrice, qty_t quantity, EngineType::OrderType oType);
     Book& getBuyBook() {return buyBook;}
     Book& getSellBook() {return sellBook;}
-
+    friend std::ostream& operator<< (std::ostream &out, const Engine &engine);
 
 };
 

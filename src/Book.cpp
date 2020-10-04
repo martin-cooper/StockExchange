@@ -5,7 +5,7 @@
 #include "Limit.h"
 #include "Book.h"
 
-void Book::addOrder(Order *newOrder) {
+Limit& Book::addOrder(Order *newOrder) {
     orderIdMap[newOrder->idNumber] = newOrder;
     auto midIndex {bookData.size() / 2};
     int price = newOrder->limitPrice;
@@ -15,6 +15,7 @@ void Book::addOrder(Order *newOrder) {
         bookData[midIndex].setPrice(price);
         bestPriceIndex = midIndex;
         bestPriceAmount = price;
+        return bookData[midIndex];
     } else {
         //assuming reasonable order here, wont go out of bounds since we allocated a reasonable size
         //TODO: error handling
@@ -26,6 +27,7 @@ void Book::addOrder(Order *newOrder) {
             bestPriceIndex = newIndex;
             bestPriceAmount = price;
         }
+        return bookData[newIndex];
     }
 }
 
@@ -33,12 +35,14 @@ qty_t Book::fillSharesForOrder(oid_t orderId, qty_t quantity) {
     auto limitLevel {findLimitLevel(orderId)};
     auto order {orderIdMap[orderId]};
     limitLevel.partialFillOrder(order, quantity);
+    return order->getUnfilledShares();
 }
 
 qty_t Book::partialCancelOrder(oid_t orderId, qty_t quantity) {
     auto limitLevel {findLimitLevel(orderId)};
     auto order {orderIdMap[orderId]};
     limitLevel.reduceOrderQty(order, quantity);
+    return order->getUnfilledShares();
 }
 
 void Book::deleteOrder(oid_t orderId) {
@@ -59,7 +63,6 @@ void Book::deleteOrder(oid_t orderId) {
                     break;
                 }
             }
-
         } else {
             for (int i {bestPriceIndex}; i < bookData.size(); ++i) {
                 if (bookData[i].getVolume() > 0) {

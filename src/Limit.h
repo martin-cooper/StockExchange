@@ -23,7 +23,7 @@ struct Order {
     const std::time_t orderTime;
     Order *prev;
     Order *next;
-
+    qty_t getUnfilledShares() const {return qty - sharesFilled;}
 };
 
 class Limit {
@@ -54,6 +54,7 @@ public:
     qty_t getVolume() const {return limitVolume;}
     unsigned int getOrderQty() const {return orderQty;}
     void setPrice(int price) {limitPrice = price;}
+    Order *getHead() {return head;}
 
     void addOrder(Order *order);
     void removeOrder(Order *order);

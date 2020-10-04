@@ -17,7 +17,7 @@ void Limit::addOrder(Order *order) {
         tail = order;
     } else {
         tail->next = order;
-        order->next = tail;
+        order->prev = tail;
         tail = order;
     }
     ++orderQty;
@@ -41,6 +41,10 @@ void Limit::removeOrder(Order *order) {
         order->prev->next = order->next;
     }
     --orderQty;
+    auto unfilled {order->getUnfilledShares()};
+    if (unfilled != 0) {
+        partialFillOrder(order, unfilled);
+    }
     delete order;
 }
 
@@ -55,7 +59,8 @@ qty_t Limit::reduceOrderQty(Order *order, qty_t sharesToReduceBy) {
 qty_t Limit::partialFillOrder(Order *order, qty_t sharesFilled) {
     order->sharesFilled += sharesFilled;
     limitVolume -= sharesFilled;
-    return order->qty - order->sharesFilled;
+    order->cumulativeFillPrice += sharesFilled * limitPrice;
+    return order->getUnfilledShares();
 }
 
 std::ostream& operator<< (std::ostream &out, const Limit &level) {
@@ -64,7 +69,7 @@ std::ostream& operator<< (std::ostream &out, const Limit &level) {
     Order* runner = level.head;
     for (std::size_t i{0}; i < level.orderQty / 5 + 1; ++i) {
         for (std::size_t j{0}; j < 5 && runner != nullptr; ++j) {
-            out << "[ID: " << runner->idNumber << ", Vol: " << runner->qty << "], ";
+            out << "[ID: " << runner->idNumber << ", Vol: " << runner->getUnfilledShares() << "], ";
             runner = runner->next;
         }
         out << std::endl;

@@ -25,15 +25,15 @@ private:
 public:
     Book(std::size_t initAllocSize, OrderType::OrderSide orderType, std::size_t initOidMapSize) :
         //Empty limit vector, initialized to initial size preventing need for constant reallocation
-        bookData {std::vector<Limit> {initAllocSize, Limit {}}},
+        bookData {std::vector<Limit> (initAllocSize, Limit {})},
         oType {orderType},
         orderIdMap {std::unordered_map<unsigned int, Order*>(initOidMapSize)},
         bestPriceAmount {-1}, bestPriceIndex {-1}
     {}
-    std::vector<Limit> getBookData(){return bookData;}
+    std::vector<Limit> &getBookData(){return bookData;}
     int getBestPriceAmount() const {return bestPriceAmount;}
     int getBestPriceIndex() const {return bestPriceIndex;}
-    void addOrder(Order* newOrder);
+    Limit& addOrder(Order* newOrder);
 
     //Public interface methods
     qty_t fillSharesForOrder(oid_t orderId, qty_t quantity);
