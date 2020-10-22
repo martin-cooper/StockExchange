@@ -7,7 +7,7 @@
 
 Limit& Book::addOrder(Order *newOrder) {
     orderIdMap[newOrder->idNumber] = newOrder;
-    auto midIndex {bookData.size() / 2};
+    auto midIndex = bookData.size() / 2;
     int price = newOrder->limitPrice;
     //check if first order in the book
     if (bestPriceIndex == -1) {
@@ -31,25 +31,24 @@ Limit& Book::addOrder(Order *newOrder) {
     }
 }
 
-qty_t Book::fillSharesForOrder(oid_t orderId, qty_t quantity) {
-    auto limitLevel {findLimitLevel(orderId)};
-    auto order {orderIdMap[orderId]};
+qty_t Book::fillSharesForOrder(Order *order, qty_t quantity) {
+    auto limitLevel {findLimitLevel(order->idNumber)};
     limitLevel.partialFillOrder(order, quantity);
     return order->getUnfilledShares();
 }
 
-qty_t Book::partialCancelOrder(oid_t orderId, qty_t quantity) {
-    auto limitLevel {findLimitLevel(orderId)};
-    auto order {orderIdMap[orderId]};
+qty_t Book::partialCancelOrder(Order *order, qty_t quantity) {
+    auto limitLevel {findLimitLevel(order->idNumber)};
     limitLevel.reduceOrderQty(order, quantity);
     return order->getUnfilledShares();
 }
 
-void Book::deleteOrder(oid_t orderId) {
-    auto limitLevel {findLimitLevel(orderId)};
-    auto order {orderIdMap[orderId]};
+void Book::deleteOrder(Order *order) {
+    auto const oid = order->idNumber;
+    auto limitLevel {findLimitLevel(oid)};
+
     limitLevel.removeOrder(order);
-    orderIdMap.erase(orderId);
+    orderIdMap.erase(oid);
     //removed the last order at a level
     if (limitLevel.getVolume() == 0) {
         //look for new best limit price

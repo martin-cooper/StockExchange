@@ -10,7 +10,7 @@ void testLimit();
 void testBook();
 void testEngine();
 int main() {
-    testBook();
+    //testBook();
     testEngine();
     return 0;
 }
@@ -66,14 +66,27 @@ void testBook() {
 }
 
 void testEngine() {
-    Engine testEngine {Engine {500}};
-    auto& sellBook {testEngine.getSellBook()};
-    sellBook.addOrder(new Order {1, 267, 140});
+    constexpr std::size_t priceRange = 15;
+    constexpr std::size_t numOrders = 25;
+    Engine testEngine {Engine(priceRange * 4)};
+    std::random_device dev;
+    std::mt19937 rng(dev());
+    std::uniform_int_distribution<std::mt19937::result_type> volDist {1,250};
+    std::uniform_int_distribution<std::mt19937::result_type> priceDist {1, priceRange};
+    std::uniform_int_distribution<std::mt19937::result_type> buyOrSell {1, 2};
 
-    auto results {testEngine.processIncomingOrder(2, 140, 69, EngineType::BUY)};
-    for (auto &result: *results) {
-        std::cout << "OrderId: " << result.orderId << ", Type: " << result.type << ", Average price: " <<
-        result.averagePrice << ", Num shares: " << result.numShares << ", timestamp: " << result.timestamp <<
-        std::endl;
+    auto allResults {std::vector<std::unique_ptr<std::vector<OrderEvent>>>()};
+    auto start = std::chrono::high_resolution_clock::now();
+    for (int i {0}; i < numOrders; ++i) {
+        auto type {buyOrSell(rng) == 1 ? EngineType::BUY : EngineType::SELL};
+        allResults.push_back(testEngine.processIncomingOrder(i, priceDist(rng), volDist(rng), type));
+    }
+    auto end = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+    std::cout << duration.count() << std::endl << 1000.0 * numOrders / duration.count() << std::endl;
+    for (auto const &row: allResults) {
+        for (auto const &col: *row) {
+            std::cout << col;
+        }
     }
 }

@@ -16,6 +16,7 @@ struct OrderEvent {
     qty_t numShares;
     EngineType::OrderEventType type;
     double averagePrice;
+    friend std::ostream& operator << (std::ostream &out, const OrderEvent &event);
 };
 
 
@@ -24,8 +25,7 @@ class Engine {
 private:
     Book buyBook;
     Book sellBook;
-    events_t handleBuy(oid_t orderId, int limitPrice, qty_t newOrderQuantity);
-    events_t handleSell(oid_t orderId, int limitPrice, qty_t newOrderQuantity);
+    events_t handleTransaction(oid_t orderId, int limitPrice, qty_t newOrderQuantity, EngineType::OrderType oType);
 
 public:
     explicit Engine(std::size_t allocSize) :

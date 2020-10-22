@@ -18,7 +18,7 @@ private:
     std::unordered_map<unsigned int, Order*> orderIdMap;
     int bestPriceAmount;
     int bestPriceIndex;
-    void deleteOrder(oid_t orderId);
+    void deleteOrder(Order *order);
     Limit& findLimitLevel(oid_t orderId);
 
 
@@ -36,10 +36,10 @@ public:
     Limit& addOrder(Order* newOrder);
 
     //Public interface methods
-    qty_t fillSharesForOrder(oid_t orderId, qty_t quantity);
-    qty_t partialCancelOrder(oid_t orderId, qty_t quantity);
-    void fillOrder(oid_t orderId) {deleteOrder(orderId);}
-    void cancelOrder(oid_t orderId) {deleteOrder(orderId);}
+    qty_t fillSharesForOrder(Order *order, qty_t quantity);
+    qty_t partialCancelOrder(Order *order, qty_t quantity);
+    void fillOrder(Order *order) {deleteOrder(order);}
+    void cancelOrder(Order *order) {deleteOrder(order);}
     std::size_t totalOrdersOutstanding();
     friend std::ostream& operator<< (std::ostream &out, const Book &book);
 };
