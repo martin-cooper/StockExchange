@@ -29,8 +29,8 @@ private:
 
 public:
     explicit Engine(std::size_t allocSize) :
-        buyBook{Book{allocSize, OrderType::BUY, allocSize}},
-        sellBook{Book{allocSize, OrderType::SELL, allocSize}}
+            buyBook{Book{allocSize, BookType::OrderSide::BUY, allocSize}},
+            sellBook{Book{allocSize, BookType::OrderSide::SELL, allocSize}}
     {}
     events_t processIncomingOrder(oid_t orderId, int limitPrice, qty_t quantity, EngineType::OrderType oType);
     Book& getBuyBook() {return buyBook;}

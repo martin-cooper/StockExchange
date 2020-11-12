@@ -10,38 +10,44 @@
 
 #include "types.h"
 #include "Limit.h"
+#include "Order.h"
 
 class Book {
 private:
     std::vector<Limit> bookData;
-    OrderType::OrderSide oType;
-    std::unordered_map<unsigned int, Order*> orderIdMap;
+    BookType::OrderSide oType;
+    std::unordered_map<unsigned int, std::shared_ptr<Order>> orderIdMap;
     int bestPriceAmount;
     int bestPriceIndex;
-    void deleteOrder(Order *order);
-    Limit& findLimitLevel(oid_t orderId);
+
+    int getNewLimitIndex(int newPrice) const;
+
+    static std::vector<Limit> initBookData(int lowPrice, int highPrice, BookType::OrderSide orderType);
 
 
 public:
-    Book(std::size_t initAllocSize, OrderType::OrderSide orderType, std::size_t initOidMapSize) :
-        //Empty limit vector, initialized to initial size preventing need for constant reallocation
-        bookData {std::vector<Limit> (initAllocSize, Limit {})},
-        oType {orderType},
-        orderIdMap {std::unordered_map<unsigned int, Order*>(initOidMapSize)},
-        bestPriceAmount {-1}, bestPriceIndex {-1}
-    {}
-    std::vector<Limit> &getBookData(){return bookData;}
-    int getBestPriceAmount() const {return bestPriceAmount;}
-    int getBestPriceIndex() const {return bestPriceIndex;}
-    Limit& addOrder(Order* newOrder);
+    Book(int lowPrice, int initAllocSize, BookType::OrderSide orderType, std::size_t initOidMapSize) :
+    // Empty limit vector, initialized to initial size preventing need for constant reallocation
+            bookData{initBookData(lowPrice, initAllocSize, orderType)},
+            oType{orderType},
+            orderIdMap(initOidMapSize),
+            bestPriceAmount{-1},
+            bestPriceIndex{-1} {}
 
-    //Public interface methods
-    qty_t fillSharesForOrder(Order *order, qty_t quantity);
-    qty_t partialCancelOrder(Order *order, qty_t quantity);
-    void fillOrder(Order *order) {deleteOrder(order);}
-    void cancelOrder(Order *order) {deleteOrder(order);}
-    std::size_t totalOrdersOutstanding();
-    friend std::ostream& operator<< (std::ostream &out, const Book &book);
+    auto begin() {
+        return bookData.begin();
+    }
+
+    auto end() {
+        return bookData.end();
+    }
+
+    Limit &getBestPriceLimit() {
+        return bookData[bestPriceIndex];
+    }
+
+    void addOrderToBook(const std::shared_ptr<Order> &order);
+
 };
 
 

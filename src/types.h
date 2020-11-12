@@ -5,22 +5,24 @@
 #ifndef STOCKEXCHANGE_TYPES_H
 #define STOCKEXCHANGE_TYPES_H
 
-namespace OrderType {
-    enum OrderSide {
+#include <cstdint>
+
+namespace BookType {
+    enum class OrderSide {
         BUY,
         SELL,
     };
 }
 
 namespace EngineType {
-    enum OrderType {
+    enum class OrderType {
         BUY,
         SELL,
         ORDER_REDUCE,
         CANCEL_ORDER,
     };
 
-    enum OrderEventType {
+    enum class OrderEventType {
         FILL,
         CANCEL_RESULT,
         PARTIAL_FILL,
