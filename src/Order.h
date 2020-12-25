@@ -5,50 +5,36 @@
 #ifndef STOCKEXCHANGE_ORDER_H
 #define STOCKEXCHANGE_ORDER_H
 
-#include <ctime>
 #include "types.h"
 
-class Order {
-private:
+struct Order {
     const oid_t idNumber;
-    qty_t qty;
     const int limitPrice;
+    qty_t qty;
     qty_t sharesFilled;
     // Sum of numFilled * price, prevents loss of data due to floating point arithmetic
     int cumulativeFillPrice;
-    const time_t orderTime;
+    BookType::OrderSide type;
 
-public:
-    Order(oid_t id, qty_t qty, int limitPrice) :
-            idNumber{id},
-            qty{qty},
-            limitPrice{limitPrice},
-            sharesFilled{0},
-            cumulativeFillPrice{0},
-            orderTime{time(nullptr)} {}
+    Order(oid_t id, qty_t qty, int limitPrice, BookType::OrderSide side) :
+        idNumber{id},
+        qty{qty},
+        limitPrice{limitPrice},
+        type{side},
+        sharesFilled{0},
+        cumulativeFillPrice{0} {
+    }
 
     qty_t getUnfilledShares() const {
         return qty - sharesFilled;
     }
 
-    qty_t getFilledShares() const {
-        return sharesFilled;
-    }
-
-    qty_t getOrderQuantity() const {
-        return qty;
-    }
-
-    oid_t getOrderId() const {
-        return idNumber;
-    }
-
-    int getLimitPrice() const {
-        return limitPrice;
+    double getAverageFillPrice() const {
+        return 1.0 * cumulativeFillPrice / sharesFilled;
     }
 
     qty_t fillSharesAtPrice(qty_t numShares, int fillPrice) {
-        qty -= numShares;
+        sharesFilled += numShares;
         cumulativeFillPrice += numShares * fillPrice;
         return qty;
     }

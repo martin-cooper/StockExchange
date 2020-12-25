@@ -5,37 +5,50 @@
 #ifndef STOCKEXCHANGE_ENGINE_H
 #define STOCKEXCHANGE_ENGINE_H
 
-#include <ctime>
-#include <memory>
+#include <queue>
 #include "Book.h"
 #include "types.h"
 
 struct OrderEvent {
+    // allow emplace to construct
+    OrderEvent(oid_t id, qty_t shares, EngineType::OrderEventType type, double avgPrice) :
+        orderId(id), numShares(shares), type(type), averagePrice(avgPrice) {}
+
     oid_t orderId;
-    std::time_t timestamp;
     qty_t numShares;
     EngineType::OrderEventType type;
     double averagePrice;
-    friend std::ostream& operator << (std::ostream &out, const OrderEvent &event);
 };
 
 
 class Engine {
-    using events_t = std::unique_ptr<std::vector<OrderEvent>>;
-private:
-    Book buyBook;
-    Book sellBook;
-    events_t handleTransaction(oid_t orderId, int limitPrice, qty_t newOrderQuantity, EngineType::OrderType oType);
-
 public:
-    explicit Engine(std::size_t allocSize) :
-            buyBook{Book{allocSize, BookType::OrderSide::BUY, allocSize}},
-            sellBook{Book{allocSize, BookType::OrderSide::SELL, allocSize}}
-    {}
-    events_t processIncomingOrder(oid_t orderId, int limitPrice, qty_t quantity, EngineType::OrderType oType);
-    Book& getBuyBook() {return buyBook;}
-    Book& getSellBook() {return sellBook;}
-    friend std::ostream& operator<< (std::ostream &out, const Engine &engine);
+    Engine(int securityLowPrice, int priceRange, std::queue<OrderEvent> &outputEventQueue) :
+        buyBook(securityLowPrice, priceRange),
+        sellBook(securityLowPrice, priceRange),
+        engineEventQueue(outputEventQueue),
+        orderIdMap{} {
+        orderIdMap.reserve(priceRange);
+    }
+
+    void handleTransaction(oid_t orderId, int limitPrice, qty_t newOrderQuantity, EngineType::OrderType oType);
+
+    void modifyOrderQuantity(oid_t orderId, qty_t newOrderQuantity);
+
+    void cancelOrder(oid_t orderId);
+
+    template<EngineType::OrderType side>
+    auto getWorkingBook();
+
+private:
+    Book<BookType::OrderSide::BUY> buyBook;
+    Book<BookType::OrderSide::SELL> sellBook;
+    std::vector<Order *> orderIdMap;
+    std::queue<OrderEvent> &engineEventQueue;
+
+    template<EngineType::OrderType side>
+    void processLimitOrder(oid_t orderId, int limitPrice, qty_t quantity);
+
 
 };
 

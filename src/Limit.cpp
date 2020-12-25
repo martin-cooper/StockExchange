@@ -1,20 +1,41 @@
 #include "Limit.h"
 
-void Limit::addOrder(const std::shared_ptr<Order> &order) {
+void Limit::popHead() {
+    orders.pop_front();
+}
+
+Order &Limit::peekHead() {
+    return *orders[0];
+}
+
+void Limit::addOrder(Order *order) {
     orders.push_back(order);
-    limitVolume += order->getOrderQuantity();
+    limitVolume += order->qty;
     orderQty++;
 }
 
 // returns shares filled for top order
-qty_t Limit::fillSharesForHead(qty_t numShares) {
+std::tuple<qty_t, bool> Limit::fillSharesForHead(qty_t numShares) {
     auto &topOrder = orders[0];
     const auto topOrderUnfilled = topOrder->getUnfilledShares();
+    qty_t sharesFilled{};
+    bool topOrderFilled = false;
+
     if (numShares >= topOrderUnfilled) {
         topOrder->fillSharesAtPrice(topOrderUnfilled, limitPrice);
-        return topOrderUnfilled;
+        sharesFilled = topOrderUnfilled;
+        topOrderFilled = true;
     } else {
         topOrder->fillSharesAtPrice(numShares, limitPrice);
-        return numShares;
+        sharesFilled = numShares;
     }
+
+    limitVolume -= sharesFilled;
+    return {sharesFilled, topOrderFilled};
+}
+
+// lazy deletion
+void Limit::clearOrder(Order &order) {
+    limitVolume -= order.getUnfilledShares();
+    orderQty--;
 }

@@ -6,7 +6,7 @@
 #define STOCKEXCHANGE_LIMIT_H
 
 #include <deque>
-#include <string>
+#include <tuple>
 #include "Order.h"
 #include "types.h"
 
@@ -17,12 +17,13 @@ private:
     unsigned int orderQty;
     //cumulative quantity of shares in outstanding orders
     qty_t limitVolume;
-    std::deque<std::shared_ptr<Order>> orders;
+    std::deque<Order *> orders;
+    std::size_t headIndex;
 
 
 public:
     explicit Limit(int price) :
-            limitPrice{price}, limitVolume{0}, orderQty{0}, orders() {}
+        limitPrice{price}, limitVolume{0}, orderQty{0}, orders(), headIndex(0) {}
 
     int getPrice() const {
         return limitPrice;
@@ -36,15 +37,24 @@ public:
         return orderQty;
     }
 
-    void popHead() {
-        orders.pop_front();
+    bool hasOrders() const {
+        return !orders.empty();
     }
 
-    void addOrder(const std::shared_ptr<Order> &order);
+    const auto &getOrders() const {
+        return orders;
+    }
 
-    qty_t fillSharesForHead(qty_t numShares);
+    void popHead();
 
-    friend std::ostream &operator<<(std::ostream &out, const Limit &level);
+    Order &peekHead();
+
+    void addOrder(Order *order);
+
+    void clearOrder(Order &order);
+
+    std::tuple<qty_t, bool> fillSharesForHead(qty_t numShares);
+
 };
 
 

@@ -7,6 +7,7 @@
 
 #include <cstdint>
 
+
 namespace BookType {
     enum class OrderSide {
         BUY,
@@ -24,13 +25,15 @@ namespace EngineType {
 
     enum class OrderEventType {
         FILL,
-        CANCEL_RESULT,
+        CANCEL_SUCCESS,
         PARTIAL_FILL,
-        ORDER_REDUCE_RESULT,
+        ORDER_REDUCE_SUCCESS,
+        ORDER_REDUCE_FAIL,
         ADDED_TO_BOOK,
     };
 }
-
 using oid_t = std::uint32_t;
 using qty_t = std::uint32_t;
+
+
 #endif //STOCKEXCHANGE_TYPES_H
