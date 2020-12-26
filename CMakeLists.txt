@@ -6,4 +6,4 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O0")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer")
 
 
-add_executable(StockExchange main.cpp src/Limit.cpp src/Limit.h src/Book.h src/types.h src/Engine.cpp src/Engine.h)
+add_executable(StockExchange main.cpp src/Limit.cpp src/Limit.h src/Book.h src/types.h src/MatchingEngine.cpp src/MatchingEngine.h)

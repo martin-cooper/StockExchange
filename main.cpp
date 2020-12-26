@@ -4,13 +4,55 @@
 #include <random>
 #include <algorithm>
 
-#include "src/Engine.h"
+#include "src/MatchingEngine.h"
 
 std::vector<int> getRandomNumberDist(int low, int high, int qty);
+void testEngine();
+void volumeTest();
 
 int main() {
+    testEngine();
+    return 0;
+}
+
+std::vector<int> getRandomNumberDist(int low, int high, int qty) {
+    std::vector<int> v{};
+
+    std::random_device rd;
+    std::mt19937 mt(rd());
+    std::uniform_int_distribution<int> dist(low, high);
+
+    for (int i = 0; i < qty; i++) {
+        v.push_back(dist(mt));
+    }
+    return v;
+}
+
+void testEngine() {
     std::queue<OrderEvent> outputEvents{};
-    Engine testEngine(500, 200, outputEvents);
+    MatchingEngine testEngine(500, 200, outputEvents);
+    struct test {
+        oid_t id;
+        int price;
+        qty_t vol;
+        EngineType::OrderType type;
+    };
+    using namespace EngineType;
+    std::array<test, 3> events {{
+         {0, 600, 250, OrderType::BUY},
+         {1, 625, 250, OrderType::BUY},
+         {2, 550, 500, OrderType::SELL},
+        }};
+    for (auto &item: events) {
+        testEngine.handleTransaction(item.id, item.price, item.vol, item.type);
+    }
+    std::cout << "test\n";
+}
+
+void volumeTest() {
+    std::queue<OrderEvent> outputEvents{};
+    MatchingEngine testEngine(500, 200, outputEvents);
+
 
     constexpr auto samples = 200;
     auto priceDistribution = getRandomNumberDist(500, 699, samples);
@@ -33,35 +75,7 @@ int main() {
     auto test = endTime - startTime;
     std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(test).count() << '\n';
 
-    std::vector<int> idDist{};
-    for (int i = 0; i < samples; i++) {
-        idDist.push_back(i);
-    }
-    auto rd = std::random_device{};
-    auto rng = std::default_random_engine{rd()};
-    std::shuffle(idDist.begin(), idDist.end(), rng);
-    auto removeStartTime = std::chrono::high_resolution_clock::now();
 
-    for (int id: idDist) {
-        testEngine.cancelOrder(id);
-    }
-    auto newEndTime = std::chrono::high_resolution_clock::now();
-    std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(newEndTime - removeStartTime).count() << '\n';
-
-    return 0;
-}
-
-std::vector<int> getRandomNumberDist(int low, int high, int qty) {
-    std::vector<int> v{};
-
-    std::random_device rd;
-    std::mt19937 mt(rd());
-    std::uniform_int_distribution<int> dist(low, high);
-
-    for (int i = 0; i < qty; i++) {
-        v.push_back(dist(mt));
-    }
-    return v;
 }
 
 

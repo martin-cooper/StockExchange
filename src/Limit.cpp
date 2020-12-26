@@ -1,6 +1,7 @@
 #include "Limit.h"
 
 void Limit::popHead() {
+    delete orders[0];
     orders.pop_front();
 }
 

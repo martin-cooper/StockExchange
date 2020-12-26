@@ -2,8 +2,8 @@
 // Created by Martin Cooper on 8/24/20.
 //
 
-#ifndef STOCKEXCHANGE_ENGINE_H
-#define STOCKEXCHANGE_ENGINE_H
+#ifndef STOCKEXCHANGE_MATCHINGENGINE_H
+#define STOCKEXCHANGE_MATCHINGENGINE_H
 
 #include <queue>
 #include "Book.h"
@@ -21,9 +21,9 @@ struct OrderEvent {
 };
 
 
-class Engine {
+class MatchingEngine {
 public:
-    Engine(int securityLowPrice, int priceRange, std::queue<OrderEvent> &outputEventQueue) :
+    MatchingEngine(int securityLowPrice, int priceRange, std::queue<OrderEvent> &outputEventQueue) :
         buyBook(securityLowPrice, priceRange),
         sellBook(securityLowPrice, priceRange),
         engineEventQueue(outputEventQueue),
@@ -33,12 +33,9 @@ public:
 
     void handleTransaction(oid_t orderId, int limitPrice, qty_t newOrderQuantity, EngineType::OrderType oType);
 
-    void modifyOrderQuantity(oid_t orderId, qty_t newOrderQuantity);
-
-    void cancelOrder(oid_t orderId);
 
     template<EngineType::OrderType side>
-    auto getWorkingBook();
+    auto getWorkingAndIncomingBook();
 
 private:
     Book<BookType::OrderSide::BUY> buyBook;
@@ -48,9 +45,11 @@ private:
 
     template<EngineType::OrderType side>
     void processLimitOrder(oid_t orderId, int limitPrice, qty_t quantity);
+    void modifyOrderQuantity(oid_t orderId, qty_t newOrderQuantity);
+    void cancelOrder(oid_t orderId);
 
 
 };
 
 
-#endif //STOCKEXCHANGE_ENGINE_H
+#endif //STOCKEXCHANGE_MATCHINGENGINE_H

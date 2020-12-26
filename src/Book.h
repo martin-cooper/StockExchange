@@ -39,6 +39,9 @@ public:
                 seekNext();
             }
             it = seeker;
+            if (it == end) {
+                return nullptr;
+            }
             return &*(it);
         }
 

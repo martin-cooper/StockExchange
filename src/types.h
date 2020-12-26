@@ -7,7 +7,6 @@
 
 #include <cstdint>
 
-
 namespace BookType {
     enum class OrderSide {
         BUY,
