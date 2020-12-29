@@ -1,3 +1,5 @@
+#include <utility>
+
 #include "Limit.h"
 
 void Limit::popHead() {
@@ -9,9 +11,9 @@ Order &Limit::peekHead() {
 }
 
 void Limit::addOrder(std::unique_ptr<Order> order) {
-    orders.push_back(std::move(order));
     limitVolume += order->qty;
     orderQty++;
+    orders.push_back(std::move(order));
 }
 
 // returns shares filled for top order
