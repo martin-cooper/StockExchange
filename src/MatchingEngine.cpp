@@ -1,6 +1,6 @@
 #include "MatchingEngine.h"
 
-void MatchingEngine::handleTransaction(
+void MatchingEngine::processIncomingEvent(
     oid_t orderId,
     int limitPrice,
     qty_t newOrderQuantity,
@@ -123,7 +123,7 @@ void MatchingEngine::processLimitOrder(oid_t orderId, int limitPrice, qty_t quan
 
 void MatchingEngine::modifyOrderQuantity(oid_t orderId, qty_t newOrderQuantity) {
     auto order = orderIdMap[orderId];
-    if (order->sharesFilled > order->qty - newOrderQuantity) {
+    if (!order || order->sharesFilled > order->qty - newOrderQuantity) {
         engineEventQueue.emplace(orderId, 0, EngineType::OrderEventType::ORDER_REDUCE_FAIL, 0);
     } else {
         order->qty = newOrderQuantity;
@@ -134,19 +134,18 @@ void MatchingEngine::modifyOrderQuantity(oid_t orderId, qty_t newOrderQuantity) 
 // cancelled orders will get popped automatically when iteration reaches the cancelled order
 // only need to set filled shares to 0
 void MatchingEngine::cancelOrder(oid_t orderId) {
-    auto &order = orderIdMap[orderId];
+    auto order = orderIdMap[orderId];
     const bool isBuyBook = order->type == BookType::OrderSide::BUY;
-    if (order->type == BookType::OrderSide::BUY) {
-        buyBook.removeOrder(*order);
-    } else {
-        sellBook.removeOrder(*order);
-    }
-    engineEventQueue.emplace(orderId, 0, EngineType::OrderEventType::CANCEL_SUCCESS, 0);
-    delete order;
-    order = nullptr;
     if (isBuyBook) {
+        buyBook.removeOrder(*order);
         buyBook.findNewBestPrice();
     } else {
+        sellBook.removeOrder(*order);
         sellBook.findNewBestPrice();
     }
+
+    engineEventQueue.emplace(orderId, 0, EngineType::OrderEventType::CANCEL_SUCCESS, 0);
+    order->qty = order->sharesFilled;
+    // remove from map but keep pointer on books
+    orderIdMap[orderId] = nullptr;
 }

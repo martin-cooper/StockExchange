@@ -31,8 +31,7 @@ public:
         orderIdMap.reserve(priceRange);
     }
 
-    void handleTransaction(oid_t orderId, int limitPrice, qty_t newOrderQuantity, EngineType::OrderType oType);
-
+    void processIncomingEvent(oid_t orderId, int limitPrice, qty_t newOrderQuantity, EngineType::OrderType oType);
 
     template<EngineType::OrderType side>
     auto getWorkingAndIncomingBook();

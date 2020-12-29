@@ -30,7 +30,7 @@ std::vector<int> getRandomNumberDist(int low, int high, int qty) {
 
 void testEngine() {
     std::queue<OrderEvent> outputEvents{};
-    MatchingEngine testEngine(500, 200, outputEvents);
+    MatchingEngine testEngine(0, 5, outputEvents);
     struct test {
         oid_t id;
         int price;
@@ -38,13 +38,16 @@ void testEngine() {
         EngineType::OrderType type;
     };
     using namespace EngineType;
-    std::array<test, 3> events {{
-         {0, 600, 250, OrderType::BUY},
-         {1, 625, 250, OrderType::BUY},
-         {2, 550, 500, OrderType::SELL},
-        }};
+    std::array<test, 5> events{{
+                                   {0, 3, 250, OrderType::BUY},
+                                   {1, 4, 250, OrderType::BUY},
+                                   {2, 2, 500, OrderType::SELL},
+                                   {3, 4, 250, OrderType::BUY},
+                                   {3, 0, 0, OrderType::CANCEL_ORDER}
+
+                               }};
     for (auto &item: events) {
-        testEngine.handleTransaction(item.id, item.price, item.vol, item.type);
+        testEngine.processIncomingEvent(item.id, item.price, item.vol, item.type);
     }
     std::cout << "test\n";
 }
@@ -69,7 +72,7 @@ void volumeTest() {
     }
     auto startTime = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < samples; i++) {
-        testEngine.handleTransaction(i, priceDistribution[i], volDis[i], buyOrSell[i]);
+        testEngine.processIncomingEvent(i, priceDistribution[i], volDis[i], buyOrSell[i]);
     }
     auto endTime = std::chrono::high_resolution_clock::now();
     auto test = endTime - startTime;
