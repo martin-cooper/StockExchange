@@ -7,6 +7,8 @@
 
 #include <deque>
 #include <tuple>
+#include <memory>
+
 #include "Order.h"
 #include "types.h"
 
@@ -17,7 +19,7 @@ private:
     unsigned int orderQty;
     //cumulative quantity of shares in outstanding orders
     qty_t limitVolume;
-    std::deque<Order *> orders;
+    std::deque<std::unique_ptr<Order>> orders;
     std::size_t headIndex;
 
 
@@ -49,7 +51,7 @@ public:
 
     Order &peekHead();
 
-    void addOrder(Order *order);
+    void addOrder(std::unique_ptr<Order> order);
 
     void clearOrder(Order &order);
 

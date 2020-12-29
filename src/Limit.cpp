@@ -1,7 +1,6 @@
 #include "Limit.h"
 
 void Limit::popHead() {
-    delete orders[0];
     orders.pop_front();
 }
 
@@ -9,8 +8,8 @@ Order &Limit::peekHead() {
     return *orders[0];
 }
 
-void Limit::addOrder(Order *order) {
-    orders.push_back(order);
+void Limit::addOrder(std::unique_ptr<Order> order) {
+    orders.push_back(std::move(order));
     limitVolume += order->qty;
     orderQty++;
 }

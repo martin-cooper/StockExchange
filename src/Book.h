@@ -92,12 +92,11 @@ public:
         }
     }
 
-    void addOrderToBook(Order *order) {
+    void addOrderToBook(std::unique_ptr<Order> order) {
         const auto newPrice = order->limitPrice;
         const auto limitIndex = getNewLimitIndex(order->limitPrice);
 
-        // assume that index equals id for now
-        bookData[limitIndex].addOrder(order);
+        bookData[limitIndex].addOrder(std::move(order));
 
         if constexpr (isBuyBook) {
             if (!bestPriceAmount.has_value() || (bestPriceAmount.has_value() && newPrice > bestPriceAmount)) {

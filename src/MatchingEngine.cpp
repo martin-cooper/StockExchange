@@ -38,9 +38,10 @@ void MatchingEngine::processLimitOrder(oid_t orderId, int limitPrice, qty_t quan
     auto books = getWorkingAndIncomingBook<side>();
     auto &workingBook = std::get<0>(books);
     auto &incomingOrderBook = std::get<1>(books);
-    auto incomingOrder = new Order(orderId, quantity, limitPrice, bookType);
+    auto incomingOrder = std::make_unique<Order>(orderId, quantity, limitPrice, bookType);
+    Order *orderObserver = incomingOrder.get();
 
-    orderIdMap.push_back(incomingOrder);
+    orderIdMap.push_back(orderObserver);
 
     auto bookIterator = workingBook.iterator();
 
@@ -77,19 +78,27 @@ void MatchingEngine::processLimitOrder(oid_t orderId, int limitPrice, qty_t quan
             incomingOrder->fillSharesAtPrice(sharesFilled, currentLimitPrice);
             const auto incomingOrderFilled = incomingOrder->getUnfilledShares() == 0;
             const auto &topOrder = currentLimit->peekHead();
+
+            engineEventQueue.emplace(
+                topOrder.idNumber,
+                sharesFilled,
+                EngineType::OrderEventType::PARTIAL_FILL,
+                currentLimitPrice
+            );
+
+            engineEventQueue.emplace(
+                orderId,
+                sharesFilled,
+                EngineType::OrderEventType::PARTIAL_FILL,
+                currentLimitPrice
+            );
+
             if (topOrderFilled) {
                 engineEventQueue.emplace(
                     topOrder.idNumber,
                     sharesFilled,
                     EngineType::OrderEventType::FILL,
                     topOrder.getAverageFillPrice()
-                );
-            } else {
-                engineEventQueue.emplace(
-                    topOrder.idNumber,
-                    sharesFilled,
-                    EngineType::OrderEventType::PARTIAL_FILL,
-                    currentLimitPrice
                 );
             }
             if (incomingOrderFilled) {
@@ -100,13 +109,6 @@ void MatchingEngine::processLimitOrder(oid_t orderId, int limitPrice, qty_t quan
                     incomingOrder->getAverageFillPrice()
                 );
                 orderIdMap[orderId] = nullptr;
-            } else {
-                engineEventQueue.emplace(
-                    orderId,
-                    sharesFilled,
-                    EngineType::OrderEventType::PARTIAL_FILL,
-                    currentLimitPrice
-                );
             }
             if (topOrderFilled) {
                 currentLimit->popHead();
@@ -117,7 +119,7 @@ void MatchingEngine::processLimitOrder(oid_t orderId, int limitPrice, qty_t quan
         }
     }
     if (incomingOrder->getUnfilledShares() != 0) {
-        incomingOrderBook.addOrderToBook(incomingOrder);
+        incomingOrderBook.addOrderToBook(std::move(incomingOrder));
     }
 }
 
