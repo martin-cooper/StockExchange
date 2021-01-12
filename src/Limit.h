@@ -20,12 +20,10 @@ private:
     //cumulative quantity of shares in outstanding orders
     qty_t limitVolume;
     std::deque<std::unique_ptr<Order>> orders;
-    std::size_t headIndex;
-
 
 public:
     explicit Limit(int price) :
-        limitPrice{price}, limitVolume{0}, orderQty{0}, orders(), headIndex(0) {}
+        limitPrice{price}, limitVolume{0}, orderQty{0}, orders{} {}
 
     int getPrice() const {
         return limitPrice;
@@ -40,7 +38,7 @@ public:
     }
 
     bool hasOrders() const {
-        return !orders.empty();
+        return orderQty != 0;
     }
 
     const auto &getOrders() const {

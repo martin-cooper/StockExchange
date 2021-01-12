@@ -31,6 +31,14 @@ public:
         orderIdMap.reserve(priceRange);
     }
 
+    std::optional<int> getBid() const {
+        return buyBook.getBestPriceAmount();
+    }
+
+    std::optional<int> getAsk() const {
+        return sellBook.getBestPriceAmount();
+    }
+
     void processIncomingEvent(oid_t orderId, int limitPrice, qty_t newOrderQuantity, EngineType::OrderType oType);
 
     template<EngineType::OrderType side>

@@ -41,9 +41,8 @@ void MatchingEngine::processLimitOrder(oid_t orderId, int limitPrice, qty_t quan
     auto &workingBook = std::get<0>(books);
     auto &incomingOrderBook = std::get<1>(books);
     auto incomingOrder = std::make_unique<Order>(orderId, quantity, limitPrice, bookType);
-    Order *orderObserver = incomingOrder.get();
 
-    orderIdMap.push_back(orderObserver);
+    orderIdMap.push_back(incomingOrder.get());
 
     auto bookIterator = workingBook.iterator();
 
@@ -117,7 +116,6 @@ void MatchingEngine::processLimitOrder(oid_t orderId, int limitPrice, qty_t quan
                 orderIdMap[topOrder.idNumber] = nullptr;
                 workingBook.findNewBestPrice();
             }
-
         }
     }
     if (incomingOrder->getUnfilledShares() != 0) {
@@ -149,7 +147,6 @@ void MatchingEngine::cancelOrder(oid_t orderId) {
     }
 
     engineEventQueue.emplace(orderId, 0, EngineType::OrderEventType::CANCEL_SUCCESS, 0);
-    order->qty = order->sharesFilled;
     // remove from map but keep pointer on books
     orderIdMap[orderId] = nullptr;
 }

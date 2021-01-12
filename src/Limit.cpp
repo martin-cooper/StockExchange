@@ -11,25 +11,22 @@ Order &Limit::peekHead() {
 }
 
 void Limit::addOrder(std::unique_ptr<Order> order) {
-    limitVolume += order->qty;
+    limitVolume += order->getUnfilledShares();
     orderQty++;
     orders.push_back(std::move(order));
 }
 
 // returns shares filled for top order
 std::tuple<qty_t, bool> Limit::fillSharesForHead(qty_t numShares) {
-    auto &topOrder = orders[0];
-    const auto topOrderUnfilled = topOrder->getUnfilledShares();
-    qty_t sharesFilled{};
+    auto &topOrder{orders[0]};
+    const auto topOrderUnfilled{topOrder->getUnfilledShares()};
+    qty_t sharesFilled{std::min(numShares, topOrderUnfilled)};
     bool topOrderFilled = false;
 
-    if (numShares >= topOrderUnfilled) {
-        topOrder->fillSharesAtPrice(topOrderUnfilled, limitPrice);
-        sharesFilled = topOrderUnfilled;
+    topOrder->fillSharesAtPrice(sharesFilled, limitPrice);
+    if (sharesFilled == topOrderUnfilled) {
         topOrderFilled = true;
-    } else {
-        topOrder->fillSharesAtPrice(numShares, limitPrice);
-        sharesFilled = numShares;
+        orderQty--;
     }
 
     limitVolume -= sharesFilled;
@@ -39,5 +36,6 @@ std::tuple<qty_t, bool> Limit::fillSharesForHead(qty_t numShares) {
 // lazy deletion
 void Limit::clearOrder(Order &order) {
     limitVolume -= order.getUnfilledShares();
+    order.qty = order.sharesFilled;
     orderQty--;
 }

@@ -17,14 +17,14 @@
 
 template<BookType::OrderSide T>
 class Book {
-    using limitList_t = std::vector<Limit>;
+    using LimitList = std::vector<Limit>;
     static constexpr auto isBuyBook = T == BookType::OrderSide::BUY;
 
 public:
     class BookIterator {
-        using itType = typename std::conditional<isBuyBook, limitList_t::reverse_iterator, limitList_t::iterator>::type;
+        using ItDirection = typename std::conditional<isBuyBook, LimitList::reverse_iterator, LimitList::iterator>::type;
     public:
-        BookIterator(limitList_t &bookData, int index) :
+        BookIterator(LimitList &bookData, int index) :
             it{getStartIt(bookData, index)},
             seeker{getStartIt(bookData, index)},
             end{getEndIt(bookData)} {}
@@ -47,13 +47,13 @@ public:
         }
 
     private:
-        itType it;
+        ItDirection it;
         // reads ahead on hasNext calls
-        itType seeker;
-        itType end;
+        ItDirection seeker;
+        ItDirection end;
 
         // start one before the actual start so calls to hasNext/getNext get the real start
-        itType getStartIt(limitList_t &data, int index) {
+        ItDirection getStartIt(LimitList &data, int index) {
             if constexpr (isBuyBook) {
                 // must subtract 2 here to get correct index
                 // [0,1,2,3,4,5,6,7]
@@ -67,7 +67,7 @@ public:
             }
         }
 
-        itType getEndIt(limitList_t &data) {
+        ItDirection getEndIt(LimitList &data) {
             if constexpr (isBuyBook) {
                 return data.rend();
             } else {
@@ -144,7 +144,7 @@ public:
 
 private:
 
-    limitList_t bookData;
+    LimitList bookData;
     std::optional<int> bestPriceAmount;
     std::optional<unsigned int> bestPriceIndex;
 

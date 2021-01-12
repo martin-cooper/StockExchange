@@ -5,13 +5,24 @@
 #include <algorithm>
 
 #include "src/MatchingEngine.h"
+#include "src/tests/TestLimit.h"
+#include "src/tests/TestBook.h"
+#include "src/tests/TestEngine.h"
 
 std::vector<int> getRandomNumberDist(int low, int high, int qty);
+
 void testEngine();
+
 void volumeTest();
 
 int main() {
-    testEngine();
+    testAddOrder();
+    testCancelOrder();
+    testFillHead();
+    testAddOrderToBook();
+    testIterateThroughBook();
+    testProcessOrders();
+
     return 0;
 }
 
@@ -56,10 +67,9 @@ void volumeTest() {
     std::queue<OrderEvent> outputEvents{};
     MatchingEngine testEngine(500, 200, outputEvents);
 
-
-    constexpr auto samples = 200;
+    constexpr auto samples = 20000000;
     auto priceDistribution = getRandomNumberDist(500, 699, samples);
-    auto volDis = getRandomNumberDist(1000, 10000, samples);
+    auto volDis = getRandomNumberDist(1000, 2000, samples);
 
     auto buyOrSellDist = getRandomNumberDist(0, 1, samples);
     std::vector<EngineType::OrderType> buyOrSell{};
@@ -76,6 +86,8 @@ void volumeTest() {
     }
     auto endTime = std::chrono::high_resolution_clock::now();
     auto test = endTime - startTime;
+    std::cout << "Bid: " << testEngine.getBid().value_or(-1) << '\n' << "Ask: " << testEngine.getAsk().value_or(-1)
+              << '\n';
     std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(test).count() << '\n';
 
 
