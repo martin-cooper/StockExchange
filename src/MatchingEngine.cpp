@@ -1,6 +1,6 @@
 #include <utility>
 
-#include "MatchingEngine.h"
+#include "../include/engine/MatchingEngine.h"
 
 void MatchingEngine::processIncomingEvent(
     oid_t orderId,
@@ -41,14 +41,14 @@ void MatchingEngine::processLimitOrder(oid_t orderId, int limitPrice, qty_t quan
     auto &workingBook = std::get<0>(books);
     auto &incomingOrderBook = std::get<1>(books);
     auto incomingOrder = std::make_unique<Order>(orderId, quantity, limitPrice, bookType);
-
-    orderIdMap.push_back(incomingOrder.get());
+    orderIdMap.emplace(orderId, incomingOrder.get());
 
     auto bookIterator = workingBook.iterator();
 
     // initial order event, Order might not be added to the book
     engineEventQueue.emplace(
         orderId,
+        0,
         quantity,
         EngineType::OrderEventType::ADDED_TO_BOOK,
         limitPrice
@@ -81,23 +81,19 @@ void MatchingEngine::processLimitOrder(oid_t orderId, int limitPrice, qty_t quan
             const auto &topOrder = currentLimit->peekHead();
 
             engineEventQueue.emplace(
+                orderId,
                 topOrder.idNumber,
                 sharesFilled,
-                EngineType::OrderEventType::PARTIAL_FILL,
+                EngineType::OrderEventType::TRADE_COMPLETE,
                 currentLimitPrice
             );
 
-            engineEventQueue.emplace(
-                orderId,
-                sharesFilled,
-                EngineType::OrderEventType::PARTIAL_FILL,
-                currentLimitPrice
-            );
 
             if (topOrderFilled) {
                 engineEventQueue.emplace(
                     topOrder.idNumber,
-                    sharesFilled,
+                    0,
+                    topOrder.qty,
                     EngineType::OrderEventType::FILL,
                     topOrder.getAverageFillPrice()
                 );
@@ -105,7 +101,8 @@ void MatchingEngine::processLimitOrder(oid_t orderId, int limitPrice, qty_t quan
             if (incomingOrderFilled) {
                 engineEventQueue.emplace(
                     orderId,
-                    sharesFilled,
+                    0,
+                    incomingOrder->qty,
                     EngineType::OrderEventType::FILL,
                     incomingOrder->getAverageFillPrice()
                 );
@@ -124,12 +121,13 @@ void MatchingEngine::processLimitOrder(oid_t orderId, int limitPrice, qty_t quan
 }
 
 void MatchingEngine::modifyOrderQuantity(oid_t orderId, qty_t newOrderQuantity) {
-    auto order = orderIdMap[orderId];
-    if (!order || order->sharesFilled > order->qty - newOrderQuantity) {
-        engineEventQueue.emplace(orderId, 0, EngineType::OrderEventType::ORDER_REDUCE_FAIL, 0);
+    auto &order = orderIdMap[orderId];
+    // order does not exist or the updated quantity is greater than the number of unfilled shares
+    if (!order || newOrderQuantity > order->getUnfilledShares()) {
+        engineEventQueue.emplace(orderId, 0, 0, EngineType::OrderEventType::ORDER_REDUCE_FAIL, 0);
     } else {
         order->qty = newOrderQuantity;
-        engineEventQueue.emplace(orderId, newOrderQuantity, EngineType::OrderEventType::ORDER_REDUCE_SUCCESS, 0);
+        engineEventQueue.emplace(orderId, 0, newOrderQuantity, EngineType::OrderEventType::ORDER_REDUCE_SUCCESS, 0);
     }
 }
 
@@ -137,16 +135,47 @@ void MatchingEngine::modifyOrderQuantity(oid_t orderId, qty_t newOrderQuantity) 
 // only need to set filled shares to 0
 void MatchingEngine::cancelOrder(oid_t orderId) {
     auto order = orderIdMap[orderId];
-    const bool isBuyBook = order->type == BookType::OrderSide::BUY;
-    if (isBuyBook) {
-        buyBook.removeOrder(*order);
-        buyBook.findNewBestPrice();
-    } else {
-        sellBook.removeOrder(*order);
-        sellBook.findNewBestPrice();
+    if (order) {
+        const bool isBuyBook = order->type == BookType::OrderSide::BUY;
+        if (isBuyBook) {
+            buyBook.removeOrder(*order);
+            buyBook.findNewBestPrice();
+        } else {
+            sellBook.removeOrder(*order);
+            sellBook.findNewBestPrice();
+        }
+
+        engineEventQueue.emplace(orderId, 0, 0, EngineType::OrderEventType::CANCEL_SUCCESS, 0);
+        // remove from map but keep pointer on books
+        orderIdMap[orderId] = nullptr;
     }
 
-    engineEventQueue.emplace(orderId, 0, EngineType::OrderEventType::CANCEL_SUCCESS, 0);
-    // remove from map but keep pointer on books
-    orderIdMap[orderId] = nullptr;
+}
+
+std::ostream& operator<<(std::ostream &out, OrderEvent &event) {
+    switch (event.type) {
+        case EngineType::OrderEventType::ORDER_REDUCE_SUCCESS:
+            out << "Order " << event.firstOrder << " successfully reduced to new quantity of "
+            << event.numShares << "\n";
+            break;
+        case EngineType::OrderEventType::ORDER_REDUCE_FAIL:
+            out << "Failed to reduce order quantity for order " << event.firstOrder << "\n";
+            break;
+        case EngineType::OrderEventType::TRADE_COMPLETE:
+            out << "Order " << event.firstOrder << " and order " << event.secondOrder << " traded " << event.numShares
+            << " shares at an average price of " << event.averagePrice << "\n";
+            break;
+        case EngineType::OrderEventType::FILL:
+            out << "Order " << event.firstOrder << " filled for " << event.numShares
+            << " shares at an average price of " << event.averagePrice << "\n";
+            break;
+        case EngineType::OrderEventType::ADDED_TO_BOOK:
+            out << "Order " << event.firstOrder << " successfully added to book for " << event.numShares
+            << " shares at an average price of " << event.averagePrice << "\n";
+            break;
+        case EngineType::OrderEventType::CANCEL_SUCCESS:
+            out << "Order " << event.firstOrder << " successfully cancelled and removed from book\n";
+            break;
+    }
+    return out;
 }

@@ -6,18 +6,22 @@
 #define STOCKEXCHANGE_MATCHINGENGINE_H
 
 #include <queue>
+#include <unordered_map>
 #include "Book.h"
 #include "types.h"
 
 struct OrderEvent {
     // allow emplace to construct
-    OrderEvent(oid_t id, qty_t shares, EngineType::OrderEventType type, double avgPrice) :
-        orderId(id), numShares(shares), type(type), averagePrice(avgPrice) {}
+    OrderEvent(oid_t first, oid_t second, qty_t shares, EngineType::OrderEventType type, double avgPrice) :
+        firstOrder(first), secondOrder(second), numShares(shares), type(type), averagePrice(avgPrice) {}
 
-    oid_t orderId;
+    oid_t firstOrder;
+    oid_t secondOrder;
     qty_t numShares;
     EngineType::OrderEventType type;
     double averagePrice;
+
+    friend std::ostream& operator<<(std::ostream &out, OrderEvent &event);
 };
 
 
@@ -27,9 +31,7 @@ public:
         buyBook(securityLowPrice, priceRange),
         sellBook(securityLowPrice, priceRange),
         engineEventQueue(outputEventQueue),
-        orderIdMap{} {
-        orderIdMap.reserve(priceRange);
-    }
+        orderIdMap{} {}
 
     std::optional<int> getBid() const {
         return buyBook.getBestPriceAmount();
@@ -47,7 +49,7 @@ public:
 private:
     Book<BookType::OrderSide::BUY> buyBook;
     Book<BookType::OrderSide::SELL> sellBook;
-    std::vector<Order *> orderIdMap;
+    std::unordered_map<oid_t, Order*> orderIdMap;
     std::queue<OrderEvent> &engineEventQueue;
 
     template<EngineType::OrderType side>

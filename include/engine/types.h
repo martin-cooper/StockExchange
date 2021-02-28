@@ -25,7 +25,7 @@ namespace EngineType {
     enum class OrderEventType {
         FILL,
         CANCEL_SUCCESS,
-        PARTIAL_FILL,
+        TRADE_COMPLETE,
         ORDER_REDUCE_SUCCESS,
         ORDER_REDUCE_FAIL,
         ADDED_TO_BOOK,
